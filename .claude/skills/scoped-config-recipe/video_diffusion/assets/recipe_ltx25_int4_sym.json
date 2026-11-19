@@ -1,0 +1,60 @@
+{
+ "transformer": {
+  "mode": "int4_sym",
+  "group_size": 128,
+  "ratio": 1.0,
+  "scoped_configs": [
+   {
+    "patterns": [
+     "__module\\.model\\.transformer_blocks\\.\\d+\\.attn1\\.to_(q|k)/"
+    ],
+    "mode": "int4_sym",
+    "group_size": 32
+   },
+   {
+    "patterns": [
+     "__module\\.model\\.transformer_blocks\\.\\d+\\.attn1\\.to_(v|out\\.0)/"
+    ],
+    "mode": "int8_asym",
+    "group_size": -1
+   },
+   {
+    "patterns": [
+     "__module\\.model\\.transformer_blocks\\.\\d+\\.ff\\.net\\.(0\\.proj|2)/"
+    ],
+    "mode": "int4_sym",
+    "group_size": 32
+   },
+   {
+    "patterns": [
+     "__module\\.model\\.(audio_)?(time_embed|prompt_adaln)\\.",
+     "__module\\.model\\.av_cross_attn_",
+     "__module\\.model\\.(audio_)?proj_(in|out)/",
+     ".*to_gate_logits/"
+    ],
+    "mode": "int8_asym",
+    "group_size": -1
+   }
+  ]
+ },
+ "connectors": {
+  "mode": "int4_sym",
+  "group_size": 128,
+  "ratio": 1.0,
+  "scoped_configs": [
+   {
+    "patterns": [
+     ".*to_gate_logits/"
+    ],
+    "mode": "int8_asym",
+    "group_size": -1
+   }
+  ]
+ },
+ "text_encoder": {
+  "mode": "int4_sym",
+  "group_size": 128,
+  "ratio": 1.0
+ },
+ "_comment": "cheap + attn1 q/k g32, v/out INT8 + video FF g32 (INT4_SYM base)"
+}

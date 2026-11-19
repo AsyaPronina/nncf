@@ -1,6 +1,7 @@
 # Precision guide
 
 ## Priors per weight family
+
 | family | prior | why |
 |---|---|---|
 | router `mlp.gate`, tiny gates (`shared_expert_gate`, `linear_attn.in_proj_a/b`) | INT8_ASYM (not BF16) | largest INT4 error, <0.1% of weights; INT8 per-channel is ~1-2% weight error, enough |
@@ -17,6 +18,7 @@ weights on the 27B). Reference quants often bump the first block and the last fe
 5/6-bit integer modes, so copy a bump as a finer group or INT8.
 
 ## Measured on Qwen3.6-35B-A3B (thinking-on MMLU-Pro, 3617 questions)
+
 | recipe | GiB | MMLU-Pro | proxy KL |
 |---|---|---|---|
 | BF16 | 64.6 | 83.74 | 0 |
@@ -35,6 +37,7 @@ within the token budget; thinking-off GSM8K put every INT4 recipe within noise o
 recipes with a short thinking-off eval.
 
 ## Pitfalls
+
 - Load on one device: `device_map` sharding gives constant logits on Qwen3.5/3.6.
 - Torch NNCF has no data-aware compression (AWQ, scale estimation, data-based mixed precision) for grouped_mm MoE experts.
 - `nncf.strip` imports torchao; `save_pretrained` on GPU can OOM on packed experts (move to CPU first).

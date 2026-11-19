@@ -1,6 +1,7 @@
 absmax
 accum
 achurkin
+adaln
 addit
 addrs
 addtl
@@ -162,6 +163,7 @@ genai
 getsizeof
 gflop
 gflops
+gguf
 giga
 gmtime
 googlenet
@@ -234,6 +236,7 @@ logicalxor
 logit
 logits
 loglikelihoods
+lpips
 lspec
 lstmsequence
 lstsq
@@ -265,6 +268,7 @@ miopen
 mistralai
 mixtral
 mmdeploy
+mmlu
 mnli
 mobilebert
 mobilenet
@@ -301,6 +305,7 @@ nncf
 nncfcfg
 nodestr
 nodewise
+nohup
 nonconvertable
 noninitialized
 noninteractive
@@ -311,6 +316,7 @@ nparam
 npnncf
 nsamples
 nsga
+numa
 numels
 nvcc
 nvfp
@@ -338,6 +344,7 @@ ovfq
 ovgru
 ovhw
 ovlstm
+ovltx
 ovmvn
 ovroi
 ovselu
@@ -451,6 +458,7 @@ sparsify
 sparsifying
 sqft
 squeezenet
+ssim
 stabilityai_stablelm
 stdv
 stfpm
@@ -497,6 +505,7 @@ unpool
 unprunable
 unquantizable
 unquantized
+unsloth
 unspecifiable
 unwrapper
 viridis

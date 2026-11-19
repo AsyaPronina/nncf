@@ -34,7 +34,14 @@ from common import select
 
 def bits(mode, group_size, node):
     g = node["in_features"] if group_size in (None, -1) else group_size
-    return {"int2_sym": 2 + 16 / g, "int3_sym": 3 + 16 / g, "int4_asym": 4 + 20 / g, "int4_sym": 4 + 16 / g, "int8_asym": 8 + 24 / g, "int8_sym": 8 + 16 / g}[mode]
+    return {
+        "int2_sym": 2 + 16 / g,
+        "int3_sym": 3 + 16 / g,
+        "int4_asym": 4 + 20 / g,
+        "int4_sym": 4 + 16 / g,
+        "int8_asym": 8 + 24 / g,
+        "int8_sym": 8 + 16 / g,
+    }[mode]
 
 
 def decisions(recipe, nodes):
