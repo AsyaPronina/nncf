@@ -15,7 +15,7 @@ gives 0.85×.
 | connectors (9.3%) | base, gate logits INT8 | INT8 changes nothing: their output error comes from the text encoder |
 | text encoder (35%) | base; INT8 if the budget allows (+4.9 GiB) | Sets the free-running floor once the transformer is upgraded (fr_geo 0.064 → 0.040). Partial upgrades (g32, g64, attn, mlp.down, edge layers) recover 20% at most. WWB: clear gain on the sym base, noise on asym |
 | edge blocks 0, 1, 46, 47 | base | INT8 gives 0.81× for +0.7 GiB |
-| INT4_ASYM vs INT4_SYM | asym | Sym has 1.1–1.3× higher proxy error. The asym recipe beats the sym recipe on WWB by +0.03 similarity/SSIM and −0.04 LPIPS, for +0.2 GiB |
+| INT4_ASYM vs INT4_SYM | asym | Sym has 1.1–1.3× higher proxy error. On WWB the asym recipe is ahead of the sym recipe on all four metrics (+0.03 similarity/SSIM, −0.04 LPIPS) but within 1.3 SE, so the choice rests on the proxy. Asym costs +0.2 GiB |
 
 Check the shares in `arch.py`'s output before copying a prior to another pipeline.
 
@@ -24,8 +24,8 @@ one is the asym one with every INT4 entry switched to INT4_SYM; upgrades stay IN
 
 ## Measured on LTX-2.5 distilled
 
-WWB: 10 prompts, 960×544, 121 frames, vs PyTorch BF16 videos, OpenVINO f32 inference. Proxy: `fr_geo` excludes
-the chaotic prompt.
+WWB: 10 prompts, 960×544, 121 frames of which the first 32 are scored, vs PyTorch BF16 videos, OpenVINO f32
+inference. Proxy: `fr_geo` excludes the chaotic prompt.
 
 | recipe | GiB | tf_video | fr_geo | WWB similarity | SSIM | LPIPS |
 |---|---|---|---|---|---|---|
@@ -44,3 +44,6 @@ Paired results vs the matching INT4 base:
 
 - **Asym recipe**: similarity +0.061 (SE 0.027), SSIM +0.058 (0.021), LPIPS −0.065 (0.033).
 - **Sym recipe**: SSIM +0.035 (0.015) and LPIPS −0.048 (0.025). Similarity +0.011 is within noise.
+
+Asym recipe vs sym recipe: similarity +0.029 (0.024), SSIM +0.032 (0.025), LPIPS −0.037 (0.030), tLPIPS −0.014
+(0.018). All four point to asym, on 6 of 10 prompts each, but every difference is within noise.

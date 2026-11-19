@@ -167,8 +167,14 @@ All metrics are relative squared errors vs BF16, `||y - y_bf16||^2 / ||y_bf16||^
   `layers.47.mlp.down_proj`, and the last `ff.net.2` of `audio_connector`.
 - **Inference config.** The proxy runs OpenVINO in f32 with `DYNAMIC_QUANTIZATION_GROUP_SIZE=0`, so the errors
   come from the weights only. `run_wwb.sh` uses the same config, so the two agree.
-- **WWB noise.** 10 prompts give a paired SE of about 0.02–0.03 on similarity. Read all four metrics and the
-  per-prompt wins; similarity alone can hide a real gain.
+- **WWB noise.** `similarity` is the cosine similarity of ViViT embeddings (a 224×224 center crop) of the
+  target and reference videos. Compare runs prompt by prompt: `wwb_compare.py` prints the mean difference and
+  its SE. With 10 prompts the SE of a similarity difference is 0.01–0.03, so read a difference under 2 SE as
+  noise, and check SSIM, LPIPS and tLPIPS too. On LTX-2.5 the sym recipe moved similarity by +0.011 (0.5 SE),
+  while SSIM (+2.4 SE) and LPIPS (−1.9 SE) improved on 8 of 10 prompts.
+- **WWB frames.** All four WWB metrics score only the first 32 of the 121 frames (ViViT's input length), so
+  errors that build up later in the clip are not measured. The proxy's `fr_video` covers every frame of its
+  49-frame clip.
 - **Audio.** WWB scores video only. Check audio with `tf_audio`/`fr_audio`, and by listening.
 - **Cost.** Spend the 2.7 h WWB runs on the base, the chosen recipe and the alternatives the proxy cannot
   separate. Keep the queue full so both sockets stay busy.
