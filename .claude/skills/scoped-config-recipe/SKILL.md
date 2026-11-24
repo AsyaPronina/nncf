@@ -7,6 +7,7 @@ compatibility: Python with torch, transformers, datasets and NNCF develop; a CUD
 # Scoped-config recipe
 
 Deliverable: `recipe.json`, the keyword arguments for `nncf.compress_weights()`:
+
 ```json
 {
   "mode": "int4_sym", "group_size": 128, "ratio": 1.0,
@@ -18,6 +19,7 @@ Deliverable: `recipe.json`, the keyword arguments for `nncf.compress_weights()`:
   "ignored_scope": {"names": []}
 }
 ```
+
 Each scoped config and the ignored scope take nncf.Scope fields: `names` (exact node names), `patterns`
 (`re.match` on node names), `types` (op type, e.g. `linear`, `_grouped_mm`, `embedding`), `subgraphs`
 (`[{"inputs": [...], "outputs": [...]}]`), `validate`. Node names come from `nodes.json` and have **no layer
@@ -26,6 +28,7 @@ config wins and a scoped config overrides `ignored_scope`. See `assets/` for the
 best measured cheap recipe on that model (17.75 GiB, LAMBADA 74.07 vs BF16 74.67; see `references/guide.md`).
 
 ## Inputs
+
 - **Model**: BF16 checkpoint path or HF id.
 - **Base precision**: e.g. `int4_asym` g128. Everything is measured against it. Layers may go *below* it
   when that pays for promoting more important ones; say why in your summary.
@@ -34,16 +37,19 @@ best measured cheap recipe on that model (17.75 GiB, LAMBADA 74.07 vs BF16 74.67
 - **Reference GGUF** (optional): local file, e.g. an Unsloth UD quant of the same model.
 
 ## Setup
+
 ```bash
 S=<this skill's directory>/scripts
 PY=python                      # any env with torch, transformers, datasets (+ gguf for step 2, vLLM for step 4 data)
 export PYTHONPATH=<nncf checkout>/src   # skip if NNCF develop is pip-installed
 ```
+
 Ask the user for the Python env if `$PY -c "import torch, transformers, nncf"` fails; don't install into
 an env they didn't name. Scripts default to the first GPU (CPU if none); pass `--device` to override, and
 check `nvidia-smi` for free GPUs on a shared machine.
 
 ## Steps
+
 1. **Architecture**: `$PY $S/arch.py $MODEL --out nodes.json`. Prints each weight family's share of the
    weights. Read `references/guide.md` for the priors on the families you see.
 2. **Reference** (if given): `$PY $S/reference.py <file.gguf> --nodes nodes.json`. Shows each family's
@@ -75,11 +81,13 @@ check `nvidia-smi` for free GPUs on a shared machine.
    It ends with a markdown table: one row per layer type with its share of the weights, one column per
    recipe with the precision and stored bits each layer type gets, and a total GiB / bpw row.
 4. **Proxy**: build the trace set once, then score every candidate in one run (teacher loaded once):
+
    ```bash
    $PY $S/proxy_kl.py data $MODEL --out data.jsonl     # --tp N if the model needs several GPUs
    $PY $S/proxy_kl.py eval $MODEL --data data.jsonl \
        --candidate base=base.json --candidate a=a.json --candidate b=b.json
    ```
+
    `eval` keeps the BF16 teacher and one candidate in memory, on the first two GPUs by default (set
    `--teacher-device`/`--device`). If they don't fit, ask the user before falling back to CPU.
    Lower `kl` (and `kl_late_half`) is better. Differences under ~2x need a real eval to separate.
@@ -94,9 +102,16 @@ check `nvidia-smi` for free GPUs on a shared machine.
      low-impact family to bring it back.
    Write the next round's candidates from these conclusions, re-run `size.py` and the proxy on them (keep
    the base and the current best for comparison), and stop when a round no longer gives a clear gain.
-6. **Deliver** the best `recipe.json` (within the size limit, if one was given), with:
+6. **Follow-up with checking sensitivity of different transformer blocks**
+   - Take the best candidate from the previous rounds as the starting point.
+   - For each transformer block, try changing its precision while keeping others fixed.
+   - Observe the impact on KL and size to identify which blocks are most sensitive.
+   - Check which layer types inside these block carries the most error and contribute significantly to KL.
+   - Use this information to guide further refinements.
+7. **Deliver** the best `recipe.json` (within the size limit, if one was given), with:
    - the per-layer-type precision table from `size.py`, run on the base and the chosen recipe, pasted as is:
-     ```
+
+     ```markdown
      | Layer type | Share | base | recipe |
      |---|---|---|---|
      | mlp.experts.gate_up_proj | 62% | INT4_SYM g128 (4.125) | INT4_SYM g128 (4.125) |
@@ -104,13 +119,16 @@ check `nvidia-smi` for free GPUs on a shared machine.
      | mlp.experts.down_proj | 31% | ... | INT4_ASYM g64 (4.312) layers 1-38; INT8_ASYM (8.01) layer 39 |
      | Total | | 17.11 GiB, 4.240 bpw | 17.75 GiB, 4.400 bpw |
      ```
+
    - for each layer type that differs from the base, one line of reasoning and evidence (why the layer
      matters, the reference signal, and what the proxy showed when it was changed);
    - proxy KL of every candidate tried, per round, vs the base, and what each round changed.
    Tell the user to confirm with a thinking-on eval.
 
 Apply it with:
+
 ```python
-from common import load_recipe   # $S on sys.path
+from common import load_recipe  # $S on sys.path
+
 model = nncf.compress_weights(model, dataset=nncf.Dataset([example_input]), **load_recipe("recipe.json"))
 ```

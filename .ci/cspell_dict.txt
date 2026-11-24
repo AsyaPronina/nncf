@@ -162,6 +162,7 @@ genai
 getsizeof
 gflop
 gflops
+gguf
 giga
 gmtime
 googlenet
@@ -495,6 +496,7 @@ unpatches
 unpatching
 unpool
 unprunable
+unsloth
 unquantizable
 unquantized
 unspecifiable
